@@ -33,8 +33,6 @@ MainWindow::MainWindow(QWidget *parent) :
     // Setup variables
     mwReference = this;
     bWinKey     = false;
-    bF9         = false;
-    bF10        = false;
 
     // Install the low-level keyboard & mouse hooks
     hhkLowLevelKybd = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, 0, 0);
@@ -54,62 +52,64 @@ void MainWindow::keyDown(DWORD key)
     // Launch doMultimedia everytime key of interest is pressed
     //      Otherwise it'll still launch even if non-interested key is pressed
     //      Also will result in massive trigger spam when right keys are pressed
-    if(key == VK_LWIN)
+    //      By keeping it within the parenthesis, doMultimedia will fire on that specific key repeat
+    //      Otherwise it'll spam on both win and key repeat, meaning it'll fire 30+ a second if outside brackets
+    if(key == VK_LWIN || key == VK_RWIN)
     {
         bWinKey = true;
-        doMultimedia();
+        doMultimedia(key);
     }
     if(key == VK_F9)
-    {
-        bF9 = true;
-        doMultimedia();
-    }
+        doMultimedia(key);
     if(key == VK_F10)
-    {
-        bF10 = true;
-        doMultimedia();
-    }
+        doMultimedia(key);
+    if(key == VK_DOWN)
+        doMultimedia(key);
+    if(key == VK_UP)
+        doMultimedia(key);
+    if(key == VK_END)
+        doMultimedia(key);
 }
 
 void MainWindow::keyUp(DWORD key)
 {
     // Remove the bools
-    if(key == VK_LWIN)
+    if(key == VK_LWIN || key == VK_RWIN)
         bWinKey = false;
-    if(key == VK_F9)
-        bF9 = false;
-    if(key == VK_F10)
-        bF10 = false;
 }
 
-void MainWindow::doMultimedia()
+void MainWindow::pressKey(DWORD vkKeyCode)
 {
+    INPUT Input;
+    // Set up a generic keyboard event.
+    Input.type = INPUT_KEYBOARD;
+    Input.ki.wScan = 0;
+    Input.ki.time = 0;
+    Input.ki.dwExtraInfo = 0;
+    Input.ki.dwFlags = 0;
+
+    Input.ki.wVk = vkKeyCode;
+    SendInput(1, &Input, sizeof(INPUT));
+}
+
+void MainWindow::doMultimedia(DWORD vkKeyCode)
+{
+    // Check if any win key is being pressed first
+    if(!bWinKey) return;
+
     // Play / Pause
-    if (bF9 && bWinKey)
-    {
-        INPUT Input;
-        // Set up a generic keyboard event.
-        Input.type = INPUT_KEYBOARD;
-        Input.ki.wScan = 0;
-        Input.ki.time = 0;
-        Input.ki.dwExtraInfo = 0;
-        Input.ki.dwFlags = 0;
-
-        Input.ki.wVk = VK_MEDIA_PLAY_PAUSE;
-        SendInput(1, &Input, sizeof(INPUT));
-    }
+    if (vkKeyCode == VK_F9)
+        pressKey(VK_MEDIA_PLAY_PAUSE);
     // Next Track
-    else if (bF10 && bWinKey)
-    {
-        INPUT Input;
-        // Set up a generic keyboard event.
-        Input.type = INPUT_KEYBOARD;
-        Input.ki.wScan = 0;
-        Input.ki.time = 0;
-        Input.ki.dwExtraInfo = 0;
-        Input.ki.dwFlags = 0;
-
-        Input.ki.wVk = VK_MEDIA_NEXT_TRACK;
-        SendInput(1, &Input, sizeof(INPUT));
-    }
+    else if (vkKeyCode == VK_F10)
+        pressKey(VK_MEDIA_NEXT_TRACK);
+    // Lower Volume
+    else if (vkKeyCode == VK_DOWN)
+        pressKey(VK_VOLUME_DOWN);
+    // Increase Volume
+    else if (vkKeyCode == VK_UP)
+        pressKey(VK_VOLUME_UP);
+    // Mute
+    else if (vkKeyCode == VK_END)
+        pressKey(VK_VOLUME_MUTE);
 }

@@ -20,14 +20,14 @@ public:
 
     void keyDown(DWORD key);
     void keyUp(DWORD key);
+
+    static void pressKey(DWORD vkKeyCode);
 private slots:
-    void doMultimedia();
+    void doMultimedia(DWORD vkKeyCode);
 private:
     Ui::MainWindow *ui;
     HHOOK hhkLowLevelKybd;
     bool bWinKey;
-    bool bF9;
-    bool bF10;
 };
 
 #endif // MAINWINDOW_H
